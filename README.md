@@ -21,11 +21,12 @@ A client portal + admin panel built with **Next.js 16 (App Router)**, **React 19
 npm install
 cp .env.example .env.local   # then edit the values
 npm run seed:admin           # creates the admin account in MongoDB
+npm run seed:nova            # optional: the NOVA Terminal sample programme
 npm run dev                  # http://localhost:3000
 ```
 
-The app ships with no demo content - the public home page stays empty until an
-admin creates projects.
+Without `seed:nova` the app starts empty - the public home page stays blank
+until an admin creates a project.
 
 ### Environment variables (`.env.local`)
 
@@ -36,6 +37,7 @@ admin creates projects.
 | `SEED_ADMIN_EMAIL` | Only read by `npm run seed:admin`. Defaults to `admin@project.com`. |
 | `SEED_ADMIN_PASSWORD` | Only read by `npm run seed:admin`. |
 | `SEED_ADMIN_NAME` | Only read by `npm run seed:admin`. |
+| `SEED_CLIENT_PASSWORD` / `SEED_DEV_PASSWORD` / `SEED_START` / `SEED_RESET` | Only read by `npm run seed:nova`. |
 
 ### Admin account
 
@@ -51,6 +53,62 @@ password are **required at creation**, so a new developer can sign in
 immediately. Editing a developer with a blank password field keeps the current
 one. Emails are unique among developers that have one; developers created before
 this rule show a "no password" badge until an admin edits them.
+
+## The NOVA sample programme
+
+`scripts/seed-nova.mjs` imports a complete programme built from the NOVA
+Terminal technical delivery timeline: a 15-month project plus a staged go-live,
+**14 milestones**, ten developers mapped to the seven workstreams, and **372
+tasks** with per-month due dates and priorities.
+
+```bash
+npm run seed:nova
+```
+
+Delivered work is declared once, in the `PROGRESS` table near the top of the
+script - the task lists carry no status of their own. Out of the box month 1
+(P0) is closed out and month 2 is under way, so the board opens at **8%** rather
+than empty. Within a milestone the earliest-due tasks are taken first, so
+progress always follows the calendar. Change the two numbers in `PROGRESS` to
+move the reported percentage.
+
+Milestones follow the programme calendar, each one a deliverable block of
+between 18 and 36 tasks:
+
+| Milestone | Tasks |
+| --- | --- |
+| M1 - P0: Architecture, Security Model & Cloud Scaffold | 27 |
+| M2 - P1: Multi-Tenancy Foundation | 21 |
+| M3 - P1: Broker Abstraction & IBKR Re-platform | 22 |
+| M4 - P1: Schwab, Alpaca & the Session Pool | 20 |
+| M4-5 - P2: Onboarding, Billing & Entitlements | 36 |
+| M5-6 - P2: Broker Breadth, Statements & the P2 Gate | 33 |
+| M6-7 - P3: Shared Market-Data Platform | 18 |
+| M7 - P3: Scale Infrastructure & Observability | 18 |
+| M7 - P3: Intelligence, Co-pilot & Risk Guardrails | 22 |
+| M7-8 - P3: Mobile, Admin Console & Hardening | 36 |
+| M9-10 - P4: Closed Beta & Rapid Iteration | 30 |
+| M11-12 - P4: Reliability, Support & Exit Review | 28 |
+| M13-14 - P5: Load, Chaos, Pen-Test & DR | 31 |
+| M15 - P5: Compliance, Sign-off & Staged Go-Live | 30 |
+
+| | |
+| --- | --- |
+| Client password (public site) | `nova2026`, or `SEED_CLIENT_PASSWORD` |
+| Developer logins | `<firstname>@novaterminal.com` |
+| Developer password (all ten) | `nova12345` |
+
+The ten developers are Axit, Manoj, Priyank, Vivek, Ankit, Nirmal, NavNeet,
+Kinjal, Kruti and Neha. Each milestone's team is derived from whoever owns work
+inside it, so the client-side explorer always shows a real team.
+
+The script is safe to re-run: it removes **only its own** project, milestones,
+tasks and developers before reseeding, so anything you created by hand survives.
+Set `SEED_RESET=1` to wipe projects, milestones, developers and tasks first
+(admin accounts are never touched). Override the defaults with
+`SEED_CLIENT_PASSWORD`, `SEED_DEV_PASSWORD` and `SEED_START` (`YYYY-MM-DD`, the
+first day of month 1 - every other date is derived from it, so the whole
+timeline shifts together).
 
 ## Routes
 
@@ -185,7 +243,9 @@ src/
     session.ts      getAdminSession / isAdmin / getDeveloperSession
     queries.ts      server-side data reads, incl. getProjectTree
   proxy.ts          guards /admin and /developer
-scripts/seed-admin.mjs   creates / updates the admin account
+scripts/
+  seed-admin.mjs    creates / updates the admin account
+  seed-nova.mjs     imports the NOVA sample programme
 ```
 
 ## Theming

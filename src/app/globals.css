@@ -153,6 +153,35 @@ body {
   color: var(--brand-fg);
 }
 
+/* Scrollbars follow the theme instead of the browser default. */
+html {
+  scrollbar-color: var(--line2) transparent;
+  scrollbar-width: thin;
+}
+
+.scroll-pane {
+  scrollbar-color: var(--line2) transparent;
+  scrollbar-width: thin;
+}
+
+.scroll-pane::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scroll-pane::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-pane::-webkit-scrollbar-thumb {
+  background: var(--line2);
+  border-radius: 999px;
+}
+
+.scroll-pane::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
 @layer components {
   .card {
     @apply rounded-2xl border border-line bg-surface;

@@ -94,7 +94,7 @@ export function Explorer({ tree, onLock }: { tree: Tree; onLock: () => void }) {
             their tasks. On touch screens, tap instead.
           </p>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]">
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]">
             <Column title="Milestones" count={milestones.length}>
               {milestones.map((m, i) => {
                 const active = m._id === milestone?._id;
@@ -151,6 +151,7 @@ export function Explorer({ tree, onLock }: { tree: Tree; onLock: () => void }) {
               title="Team"
               subtitle={milestone?.title}
               count={milestone?.developers.length ?? 0}
+              scrollKey={milestone?._id}
             >
               {milestone && milestone.developers.length > 0 ? (
                 milestone.developers.map((d) => {
@@ -195,6 +196,7 @@ export function Explorer({ tree, onLock }: { tree: Tree; onLock: () => void }) {
               title="Tasks"
               subtitle={developer?.name}
               count={developer?.tasks.length ?? 0}
+              scrollKey={developer?._id}
             >
               {developer && developer.tasks.length > 0 ? (
                 developer.tasks.map((t) => (
@@ -248,16 +250,19 @@ function Column({
   title,
   subtitle,
   count,
+  scrollKey,
   children,
 }: {
   title: string;
   subtitle?: string;
   count: number;
+  /** Changing this remounts the scroll pane, resetting it to the top. */
+  scrollKey?: string;
   children: ReactNode;
 }) {
   return (
-    <section className="card flex flex-col overflow-hidden">
-      <header className="flex items-baseline justify-between gap-3 border-b border-line px-4 py-3">
+    <section className="card flex max-h-[70vh] flex-col overflow-hidden lg:h-[70vh] lg:max-h-none">
+      <header className="flex shrink-0 items-baseline justify-between gap-3 border-b border-line px-4 py-3">
         <div className="min-w-0">
           <h2 className="text-sm font-bold tracking-wide text-heading uppercase">
             {title}
@@ -270,7 +275,14 @@ function Column({
           {count}
         </span>
       </header>
-      <div className="flex flex-col gap-1.5 p-2.5">{children}</div>
+      {/* Each column scrolls on its own, so a long milestone list never pushes
+          the team and task panes off the screen. */}
+      <div
+        key={scrollKey}
+        className="scroll-pane min-h-0 flex-1 overflow-y-auto overscroll-contain"
+      >
+        <div className="flex flex-col gap-1.5 p-2.5">{children}</div>
+      </div>
     </section>
   );
 }
