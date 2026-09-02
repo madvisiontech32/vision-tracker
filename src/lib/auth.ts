@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 
 export const ADMIN_COOKIE = "pt_admin";
+export const DEV_COOKIE = "pt_dev";
 
 const SECRET = process.env.SESSION_SECRET ?? "dev-only-insecure-secret-change-me";
 

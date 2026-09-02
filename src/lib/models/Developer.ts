@@ -8,8 +8,18 @@ const DeveloperSchema = new Schema(
     skills: { type: [String], default: [] },
     color: { type: String, default: "#6b6b6b" },
     active: { type: Boolean, default: true },
+    // Set by an admin. Absent means this developer cannot sign in yet.
+    passwordHash: { type: String, default: "", select: false },
+    lastLoginAt: { type: Date, default: null },
   },
   { timestamps: true }
+);
+
+// Unique only for developers that actually have an email; blank ones are the
+// norm for people who never sign in, and must not collide with each other.
+DeveloperSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { email: { $gt: "" } } }
 );
 
 export type DeveloperDoc = InferSchemaType<typeof DeveloperSchema> & {

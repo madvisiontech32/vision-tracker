@@ -1,7 +1,9 @@
+import bcrypt from "bcryptjs";
 import type { NextRequest } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Developer, Milestone, Task } from "@/lib/models";
 import { fail, guardAdmin, isValidObjectId, json } from "@/lib/api";
+import { MIN_PASSWORD, isEmail, normaliseEmail, parseSkills } from "../route";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -15,20 +17,30 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   const body = await req.json().catch(() => null);
   if (!body) return fail("Invalid body");
 
+  await connectDB();
+
   const update: Record<string, unknown> = {};
-  for (const field of ["name", "email", "role", "color", "active"]) {
+  for (const field of ["name", "role", "color", "active"]) {
     if (field in body) update[field] = body[field];
   }
-  if ("skills" in body) {
-    update.skills = Array.isArray(body.skills)
-      ? body.skills
-      : String(body.skills ?? "")
-          .split(",")
-          .map((s: string) => s.trim())
-          .filter(Boolean);
+  if ("skills" in body) update.skills = parseSkills(body.skills);
+
+  if ("email" in body) {
+    const email = normaliseEmail(body.email);
+    if (!email) return fail("Login email is required");
+    if (!isEmail(email)) return fail("That does not look like a valid email");
+    if (await Developer.exists({ email, _id: { $ne: id } }))
+      return fail("Another developer already uses that email");
+    update.email = email;
   }
 
-  await connectDB();
+  // Blank means "keep the current password".
+  if (body.password) {
+    if (String(body.password).length < MIN_PASSWORD)
+      return fail(`Password must be at least ${MIN_PASSWORD} characters`);
+    update.passwordHash = await bcrypt.hash(String(body.password), 10);
+  }
+
   const developer = await Developer.findByIdAndUpdate(id, update, {
     new: true,
     runValidators: true,

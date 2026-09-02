@@ -9,6 +9,9 @@ A client portal + admin panel built with **Next.js 16 (App Router)**, **React 19
 - **Client** opens the public home page, picks their project and types the
   password. Everything then lives on one screen: hover a milestone to reveal its
   team, hover a developer to reveal their tasks. No further page loads.
+- **Developer** signs in at `/developer` with the email and password the admin
+  set, sees every task assigned to them across all projects, and moves each one
+  between to do / in progress / review / done.
 - **Theme**: light / dark toggle in the header, remembered per browser, with the
   first-visit default taken from the OS preference.
 
@@ -41,6 +44,14 @@ Admins live in the `admins` collection with a bcrypt `passwordHash`
 idempotent - re-running it updates the existing account rather than creating a
 duplicate, which is also how you rotate the password.
 
+### Developer accounts
+
+Developers are created from `/admin/developers`, and the login email and
+password are **required at creation**, so a new developer can sign in
+immediately. Editing a developer with a blank password field keeps the current
+one. Emails are unique among developers that have one; developers created before
+this rule show a "no password" badge until an admin edits them.
+
 ## Routes
 
 ### Public (client)
@@ -70,9 +81,22 @@ by reading the page source.
 | `/admin/projects` | Create / edit / delete projects, set the client password, hide a project. |
 | `/admin/projects/[id]` | Manage milestones for one project. |
 | `/admin/projects/[id]/milestones/[mid]` | Assign developers, add / edit / delete their tasks. |
-| `/admin/developers` | Team pool: add, edit, delete developers. |
+| `/admin/developers` | Team pool: add, edit, delete developers, set their login. |
 
-`src/proxy.ts` (Next 16's middleware convention) guards every `/admin` route.
+### Developer
+
+| Route | What you can do |
+| --- | --- |
+| `/developer/login` | Sign in with the email + password the admin set. |
+| `/developer` | Your tasks, grouped by project and milestone, with counts and a status control on each one. |
+
+A developer may change the **status** of their **own** tasks and nothing else -
+`PATCH /api/developer/tasks/:id` matches on `{ _id, developer: session.uid }`,
+ignores every other field in the body, and answers `404` for a task owned by
+somebody else. Title, priority, due date and assignment stay admin-only.
+
+`src/proxy.ts` (Next 16's middleware convention) guards every `/admin` and
+`/developer` route, each against its own session cookie.
 
 ## API
 
@@ -82,6 +106,9 @@ All write endpoints require the admin cookie; `/api/projects` (GET) and
 ```
 POST   /api/admin/login                        { email, password }
 POST   /api/admin/logout
+POST   /api/developer/login                    { email, password }
+POST   /api/developer/logout
+PATCH  /api/developer/tasks/:id                { status } - own tasks only
 GET    /api/projects                           public list
 POST   /api/projects                           create (admin)
 GET    /api/projects/:id                       (admin)
@@ -113,7 +140,8 @@ Project    name, client, description, status, startDate, endDate,
            accessPasswordHash (bcrypt, select:false), visible
 Milestone  project ref, title, description, status, dueDate, order,
            developers [ref Developer]
-Developer  name, email, role, skills[], color, active
+Developer  name, email (unique when set), passwordHash (bcrypt, select:false),
+           role, skills[], color, active, lastLoginAt
 Task       project ref, milestone ref, developer ref, title, description,
            status (todo | in-progress | review | done),
            priority (low | medium | high), dueDate, order
@@ -141,15 +169,17 @@ src/
     projects/[id]/page.tsx                     gate + hover explorer
     admin/login/                                admin sign-in
     admin/(panel)/                              admin pages (shared chrome)
+    developer/login/                            developer sign-in
+    developer/(panel)/                          developer task board
     api/                                        route handlers
   components/       shared UI, theme toggle, explorer, admin dialogs
   lib/
     mongodb.ts      cached mongoose connection
     models/         Admin, Project, Milestone, Developer, Task
     auth.ts         JWT sign/verify + cookie names
-    session.ts      getAdminSession / isAdmin
+    session.ts      getAdminSession / isAdmin / getDeveloperSession
     queries.ts      server-side data reads, incl. getProjectTree
-  proxy.ts          guards /admin
+  proxy.ts          guards /admin and /developer
 scripts/seed-admin.mjs   creates / updates the admin account
 ```
 

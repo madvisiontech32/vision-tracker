@@ -265,7 +265,10 @@ export async function getAdminStats() {
 
 export async function getDevelopers() {
   await connectDB();
-  const developers = await Developer.find().sort({ name: 1 }).lean();
+  const developers = await Developer.find()
+    .select("+passwordHash")
+    .sort({ name: 1 })
+    .lean();
   return developers.map((d) => ({
     _id: String(d._id),
     name: d.name,
@@ -274,6 +277,10 @@ export async function getDevelopers() {
     color: d.color ?? "#6b6b6b",
     skills: d.skills ?? [],
     active: d.active ?? true,
+    // Never leak the hash itself - the admin list only needs to know whether
+    // this developer can sign in.
+    canLogin: Boolean(d.email && d.passwordHash),
+    lastLoginAt: d.lastLoginAt ? new Date(d.lastLoginAt).toISOString() : null,
   }));
 }
 
@@ -464,5 +471,74 @@ export async function getProjectTree(projectId: Id): Promise<ProjectTree | null>
       progress: pct(projectDone, projectTotal),
     },
     milestones: tree,
+  };
+}
+
+export type DeveloperTask = {
+  _id: Id;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  dueDate: string | null;
+  projectName: string;
+  milestoneTitle: string;
+  milestoneDue: string | null;
+};
+
+export type DeveloperWorkload = {
+  tasks: DeveloperTask[];
+  counts: Record<string, number>;
+  total: number;
+  progress: number;
+};
+
+/** Every task assigned to one developer, across all projects. */
+export async function getDeveloperWorkload(
+  developerId: Id
+): Promise<DeveloperWorkload> {
+  await connectDB();
+
+  const tasks = await Task.find({ developer: developerId })
+    .populate({ path: "project", model: Project, select: "name" })
+    .populate({ path: "milestone", model: Milestone, select: "title dueDate" })
+    .sort({ dueDate: 1, order: 1, createdAt: 1 })
+    .lean();
+
+  const counts: Record<string, number> = {
+    todo: 0,
+    "in-progress": 0,
+    review: 0,
+    done: 0,
+  };
+
+  const mapped: DeveloperTask[] = tasks.map((t) => {
+    counts[t.status] = (counts[t.status] ?? 0) + 1;
+    const project = t.project as unknown as { name?: string } | null;
+    const milestone = t.milestone as unknown as {
+      title?: string;
+      dueDate?: Date | null;
+    } | null;
+
+    return {
+      _id: String(t._id),
+      title: t.title,
+      description: t.description ?? "",
+      status: t.status,
+      priority: t.priority,
+      dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+      projectName: project?.name ?? "Removed project",
+      milestoneTitle: milestone?.title ?? "Removed milestone",
+      milestoneDue: milestone?.dueDate
+        ? new Date(milestone.dueDate).toISOString()
+        : null,
+    };
+  });
+
+  return {
+    tasks: mapped,
+    counts,
+    total: mapped.length,
+    progress: pct(counts.done ?? 0, mapped.length),
   };
 }
