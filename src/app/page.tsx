@@ -1,69 +1,108 @@
-import Image from "next/image";
+import Link from "next/link";
+import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
+import { EmptyState, ProgressBar, StatusBadge, formatDate } from "@/components/ui";
+import { getPublicProjects } from "@/lib/queries";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const projects = await getPublicProjects();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <>
+      <SiteHeader />
+
+      <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10">
+        <section className="mb-10">
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-line bg-chip px-3 py-1 text-xs font-medium text-body">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+            Client portal
           </p>
+          <h1 className="text-3xl font-bold tracking-tight text-heading sm:text-4xl">
+            Track every milestone of your project
+          </h1>
+          <p className="mt-2 max-w-2xl text-muted">
+            Pick your project below and unlock it with the password your project
+            manager shared. Inside, hover a milestone to reveal its team, then
+            hover a developer to see their tasks.
+          </p>
+        </section>
+
+        <div className="mb-4 flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold text-heading">All projects</h2>
+          <span className="text-sm text-muted">
+            {`${projects.length} ${projects.length === 1 ? "project" : "projects"}`}
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        {projects.length === 0 ? (
+          <EmptyState
+            title="No projects published yet"
+            hint="Once an admin creates a project it will show up here for clients to open."
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((p) => (
+              <Link
+                key={p._id}
+                href={`/projects/${p._id}`}
+                className="card card-hover group flex flex-col p-5"
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h3 className="text-base leading-snug font-semibold text-heading underline-offset-4 group-hover:underline">
+                    {p.name}
+                  </h3>
+                  <StatusBadge status={p.status} />
+                </div>
+
+                {p.client ? (
+                  <p className="mb-2 text-xs tracking-wide text-muted uppercase">
+                    {p.client}
+                  </p>
+                ) : null}
+
+                <p className="mb-5 line-clamp-2 text-sm text-muted">
+                  {p.description || "No description provided."}
+                </p>
+
+                <div className="mt-auto space-y-3">
+                  <div>
+                    <div className="mb-1.5 flex justify-between text-xs text-muted">
+                      <span>Progress</span>
+                      <span className="font-semibold text-heading">
+                        {`${p.progress}%`}
+                      </span>
+                    </div>
+                    <ProgressBar value={p.progress} />
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-line pt-3 text-xs text-muted">
+                    <span>
+                      {`${p.milestoneCount} milestones · ${p.taskCount} tasks`}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden="true"
+                      >
+                        <rect x="4" y="10" width="16" height="10" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                      </svg>
+                      {formatDate(p.endDate)}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </main>
-    </div>
+
+      <SiteFooter />
+    </>
   );
 }
