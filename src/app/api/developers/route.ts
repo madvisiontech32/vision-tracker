@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
           .split(",")
           .map((s: string) => s.trim())
           .filter(Boolean),
-    color: body.color || "#6366f1",
+    color: body.color || "#6b6b6b",
   });
 
   return json(developer.toObject(), 201);

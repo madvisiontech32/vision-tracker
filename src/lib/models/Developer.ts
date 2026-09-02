@@ -6,7 +6,7 @@ const DeveloperSchema = new Schema(
     email: { type: String, trim: true, lowercase: true, default: "" },
     role: { type: String, trim: true, default: "Developer" },
     skills: { type: [String], default: [] },
-    color: { type: String, default: "#6366f1" },
+    color: { type: String, default: "#6b6b6b" },
     active: { type: Boolean, default: true },
   },
   { timestamps: true }

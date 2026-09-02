@@ -155,37 +155,46 @@ scripts/seed-admin.mjs   creates / updates the admin account
 
 ## Theming
 
+**Both themes are strictly monochrome** - canvas, greys, black and white, no
+hue anywhere. Light and dark are the same design mirrored, so every component
+reads identically in either one.
+
 Colours are CSS custom properties on `:root`, swapped by `[data-theme="dark"]`
 on `<html>`, and exposed to Tailwind through `@theme inline` in
 `src/app/globals.css`. An inline script in the root layout applies the saved
 theme before first paint, so there is no flash of the wrong colours.
 
-**Light** uses hue. **Dark is strictly monochrome** - canvas, greys and white
-only. Status meaning is carried by intensity instead of hue, through six badge
-tiers that get brighter as they get more noteworthy:
+Without hue, meaning is carried by **intensity**: quiet things sit close to the
+canvas, noteworthy things pull away from it. Six badge tiers form the ladder:
 
-| Tier | Used for | Dark rendering |
+| Tier | Used for | Rendering |
 | --- | --- | --- |
-| `badge-neutral` | pending, todo, low | dimmest |
-| `badge-info` | planning, review, medium | dim |
+| `badge-neutral` | pending, todo, low | closest to the canvas |
+| `badge-info` | planning, review, medium | faint |
 | `badge-warn` | on-hold, in-progress | medium |
-| `badge-good` | active, done | bright |
-| `badge-brand` | completed | brightest fill |
+| `badge-good` | active, done | strong |
+| `badge-brand` | completed | strongest fill |
 | `badge-danger` | high priority | strong outline |
 
-Developer avatar colours are arbitrary hex values from the database, so in dark
-mode they are desaturated in CSS (`--avatar-filter`) rather than stored twice.
+Links cannot signal hover by colour either, so `.link-strong` and `.link-muted`
+underline instead.
+
+Developer avatar colours are arbitrary hex values from the database. `Avatar`
+maps each one onto a narrow grey band by luminance (`avatarGreys` in
+`src/components/ui.tsx`), so avatars still differ per developer while the white
+initials clear 4.5:1 on both surfaces whatever is stored.
 
 Build with the semantic utilities only - `bg-canvas`, `bg-surface`, `bg-chip`,
 `border-line`, `border-line2`, `text-heading`, `text-body`, `text-muted`,
 `bg-brand-500` / `text-brand-fg`, `text-danger` / `bg-danger-bg` - and never a
-raw Tailwind palette class such as `text-rose-500`. A raw class has one fixed
-hue and would break the monochrome rule in dark mode.
+raw Tailwind palette class (anything shaped like text-<hue>-500). A raw class
+has one fixed hue and would break the monochrome rule. Note that Tailwind scans
+this README too, so writing such a class here would compile it into the CSS.
+
+Every text/background pair in both themes clears WCAG AA; the tightest is 5.3:1.
 
 ## Production notes
 
 - Set a real `SESSION_SECRET`, and seed the admin with a strong password.
 - Cookies are `secure` automatically when `NODE_ENV=production`, so serve over HTTPS.
 - `npm run build && npm start`.
-#   v i s i o n - t r a c k e r  
- 

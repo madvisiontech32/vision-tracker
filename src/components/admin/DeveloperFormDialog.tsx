@@ -5,15 +5,17 @@ import { useState, type FormEvent } from "react";
 import { FormError, Modal } from "./Modal";
 import { api } from "@/lib/client";
 
+// Shades, not hues: the UI is monochrome, so the picker offers the same grey
+// band the avatars actually render in.
 const COLORS = [
-  "#6366f1",
-  "#0ea5e9",
-  "#14b8a6",
-  "#f59e0b",
-  "#ef4444",
-  "#a855f7",
-  "#22c55e",
-  "#ec4899",
+  "#4a4a4a",
+  "#5a5a5a",
+  "#6b6b6b",
+  "#7c7c7c",
+  "#8d8d8d",
+  "#9e9e9e",
+  "#afafaf",
+  "#c0c0c0",
 ];
 
 export type DeveloperValues = {
@@ -125,16 +127,16 @@ export function DeveloperFormDialog({
           </div>
 
           <div>
-            <label className="label">Avatar colour</label>
+            <label className="label">Avatar shade</label>
             <div className="flex flex-wrap gap-2">
               {COLORS.map((c) => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  aria-label={`Colour ${c}`}
+                  aria-label={`Shade ${c}`}
                   className={`h-8 w-8 cursor-pointer rounded-full transition ${
-                    color === c ? "ring-2 ring-white ring-offset-2 ring-offset-surface" : ""
+                    color === c ? "ring-2 ring-heading ring-offset-2 ring-offset-surface" : ""
                   }`}
                   style={{ background: c }}
                 />
