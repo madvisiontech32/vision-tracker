@@ -18,6 +18,9 @@ const ProjectSchema = new Schema(
     // Password the client types on the public site to unlock this project.
     accessPasswordHash: { type: String, required: true, select: false },
     visible: { type: Boolean, default: true },
+    // Display position. Lower shows first, on both the admin list and the
+    // public home page.
+    order: { type: Number, default: 0, index: true },
   },
   { timestamps: true }
 );

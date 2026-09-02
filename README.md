@@ -178,7 +178,7 @@ by reading the page source.
 | --- | --- |
 | `/admin/login` | Sign in with the admin email + password from the `admins` collection. |
 | `/admin` | Dashboard with counts and recent projects. |
-| `/admin/projects` | Create / edit / delete projects, set the client password, hide a project. |
+| `/admin/projects` | Create / edit / delete projects, set the client password, hide a project, set the order clients see. |
 | `/admin/projects/[id]` | Manage milestones for one project. |
 | `/admin/projects/[id]/milestones/[mid]` | Assign developers, add / edit / delete their tasks. |
 | `/admin/developers` | Team pool: add, edit, delete developers, set their login. |
@@ -219,6 +219,7 @@ POST   /api/projects                           create (admin)
 GET    /api/projects/:id                       (admin)
 PATCH  /api/projects/:id                       (admin, optional password rotate)
 DELETE /api/projects/:id                       (admin, cascades milestones + tasks)
+PATCH  /api/projects/reorder                   { ids } - full list, in display order
 POST   /api/projects/:id/unlock                { password } -> full project tree
 GET    /api/projects/:id/milestones            (admin)
 POST   /api/projects/:id/milestones            (admin)
@@ -242,7 +243,7 @@ DELETE /api/developers/:id                     (admin, cascades tasks + assignme
 Admin      name, email (unique), passwordHash (bcrypt, select:false),
            active, lastLoginAt
 Project    name, client, description, status, startDate, endDate,
-           accessPasswordHash (bcrypt, select:false), visible
+           accessPasswordHash (bcrypt, select:false), visible, order
 Milestone  project ref, title, description, status, dueDate, order,
            developers [ref Developer]
 Developer  name, email (unique when set), passwordHash (bcrypt, select:false),
@@ -288,6 +289,25 @@ src/
 scripts/
   seed-admin.mjs    creates / updates the admin account
   seed-nova.mjs     imports the NOVA sample programme
+```
+
+## Project order
+
+The arrows on each card in `/admin/projects` set the position clients see. Both
+the admin list and the public home page sort by `order` then newest-first, so
+the two always agree.
+
+The reorder endpoint takes the **whole** list of ids in the wanted order rather
+than a single move, so two admins reordering at once cannot leave two projects
+sharing a position - the later write simply wins.
+
+A project created before `order` existed has no such field, and in MongoDB a
+missing field sorts *before* `0`, which pins those projects to the top. Run the
+one-off backfill once per database to give everything a position:
+
+```bash
+npm run fix:order        # local
+npm run fix:order:prod   # Atlas
 ```
 
 ## Theming

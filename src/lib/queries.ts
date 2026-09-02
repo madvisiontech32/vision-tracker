@@ -26,7 +26,7 @@ export async function getPublicProjects(): Promise<PublicProject[]> {
   await connectDB();
 
   const projects = await Project.find({ visible: true })
-    .sort({ createdAt: -1 })
+    .sort({ order: 1, createdAt: -1 })
     .lean();
 
   const ids = projects.map((p) => p._id);

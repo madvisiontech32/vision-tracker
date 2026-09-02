@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DeleteProjectButton } from "@/components/admin/DeleteProjectButton";
 import { ProjectFormDialog } from "@/components/admin/ProjectFormDialog";
+import { ProjectOrderButtons } from "@/components/admin/ProjectOrderButtons";
 import { ProgressBar, StatusBadge, formatDate } from "@/components/ui";
 import { getPublicProjects } from "@/lib/queries";
 import { connectDB } from "@/lib/mongodb";
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 async function getAllProjects() {
   await connectDB();
-  const projects = await Project.find().sort({ createdAt: -1 }).lean();
+  const projects = await Project.find().sort({ order: 1, createdAt: -1 }).lean();
   const publicOnes = await getPublicProjects();
   const statsMap = new Map(publicOnes.map((p) => [p._id, p]));
 
@@ -35,6 +36,8 @@ async function getAllProjects() {
 
 export default async function AdminProjectsPage() {
   const projects = await getAllProjects();
+  // The order buttons swap positions within this exact list.
+  const orderedIds = projects.map((p) => p._id);
 
   return (
     <>
@@ -42,7 +45,8 @@ export default async function AdminProjectsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-heading">Projects</h1>
           <p className="mt-1 text-sm text-muted">
-            Create projects, set the client password, and manage milestones.
+            Create projects, set the client password, and manage milestones. The
+            arrows set the order clients see on the home page.
           </p>
         </div>
         <ProjectFormDialog />
@@ -57,7 +61,7 @@ export default async function AdminProjectsPage() {
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
-          {projects.map((p) => (
+          {projects.map((p, i) => (
             <div key={p._id} className="card p-5">
               <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -79,7 +83,8 @@ export default async function AdminProjectsPage() {
                     {p.client || "No client"}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <ProjectOrderButtons ids={orderedIds} index={i} />
                   <ProjectFormDialog project={p} />
                   <DeleteProjectButton projectId={p._id} />
                 </div>

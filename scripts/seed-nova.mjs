@@ -721,6 +721,7 @@ const { insertedId: projectId } = await projects.insertOne({
   description:
     "A 15-month technical delivery programme evolving NOVA Terminal into a multi-tenant, multi-broker, intelligent trading platform. Eight months of engineering across four build phases, then seven months of real-world and pre-user testing across two more, closing launch-ready at month 15 and followed by a staged go-live. Seven workstreams run in parallel and converge on a demonstrable checkpoint at the end of every phase. Month targets carry a built-in comfort buffer of up to three months.",
   status: "active",
+  order: 0,
   startDate: START,
   endDate: endOf(15),
   accessPasswordHash: await bcrypt.hash(CLIENT_PASSWORD, 10),

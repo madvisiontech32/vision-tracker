@@ -751,6 +751,8 @@ const summary = [];
 
 for (const project of selected) {
   const { insertedId: projectId } = await projects.insertOne({
+    // Position on the home page; the NOVA programme sits at 0.
+    order: PROJECTS.indexOf(project) + 1,
     name: project.name,
     client: project.client,
     description: project.description,

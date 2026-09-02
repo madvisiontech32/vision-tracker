@@ -11,7 +11,9 @@ export async function GET() {
   const admin = await isAdmin();
   const filter = admin ? {} : { visible: true };
 
-  const projects = await Project.find(filter).sort({ createdAt: -1 }).lean();
+  const projects = await Project.find(filter)
+    .sort({ order: 1, createdAt: -1 })
+    .lean();
   const counts = await Milestone.aggregate([
     { $group: { _id: "$project", total: { $sum: 1 } } },
   ]);
@@ -39,6 +41,8 @@ export async function POST(req: NextRequest) {
 
   await connectDB();
   const project = await Project.create({
+    // New projects go to the end of the list.
+    order: await Project.countDocuments(),
     name: body.name.trim(),
     client: body.client?.trim() ?? "",
     description: body.description?.trim() ?? "",
