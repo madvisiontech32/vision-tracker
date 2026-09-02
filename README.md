@@ -119,6 +119,39 @@ Set `SEED_RESET=1` to wipe projects, milestones, developers and tasks first
 first day of month 1 - every other date is derived from it, so the whole
 timeline shifts together).
 
+## The client projects
+
+`scripts/seed-projects.mjs` seeds six smaller client builds alongside the NOVA
+programme. Everything is Next.js on the web and API side and Flutter on mobile.
+
+```bash
+npm run seed:projects        # local
+npm run seed:projects:prod   # Atlas
+```
+
+| Project | Apps | Window | Done | Client password |
+| --- | --- | --- | --- | --- |
+| Gora Taxi Partner | Flutter rider + captain, Next.js console | 4 months | 70% | `gora2026` |
+| Pharmacy Delivery Suite | Flutter patient + pharmacy + rider, Next.js backend | 4 months | 66% | `pharma2026` |
+| Izi Morroco | Flutter game, Next.js backend | 3 months | 73% | `izi2026` |
+| Hkili | Flutter reader, Next.js AI story backend | 4 months | 55% | `hkili2026` |
+| Ananta | Flutter live streaming, Next.js backend + moderation | 4 months | 100%, delivered | `ananta2026` |
+| Mokaala | Flutter concert booking, Next.js organiser console | 4 months | 45% | `mokaala2026` |
+
+The completed share is declared per project and the dates are derived to match:
+each milestone says how many of its tasks are finished, and the script spreads
+the finished ones before today and the rest on or after it. So the percentage on
+the card is exactly what the project claims, and **nothing due today or later is
+ever seeded as complete** - the same rule the NOVA seed follows.
+
+The script replaces only its own projects and reuses the existing developers by
+email, so the NOVA programme is never touched by it. To re-seed a single project
+and leave every other one exactly as it is, name it:
+
+```bash
+SEED_ONLY="Ananta" npm run seed:projects:prod
+```
+
 ## Routes
 
 ### Public (client)

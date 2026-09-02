@@ -10,7 +10,9 @@
     "seed:admin": "node --env-file=.env.local scripts/seed-admin.mjs",
     "seed:nova": "node --env-file=.env.local scripts/seed-nova.mjs",
     "seed:admin:prod": "node --env-file=.env.atlas scripts/seed-admin.mjs",
-    "seed:nova:prod": "node --env-file=.env.atlas scripts/seed-nova.mjs"
+    "seed:nova:prod": "node --env-file=.env.atlas scripts/seed-nova.mjs",
+    "seed:projects": "node --env-file=.env.local scripts/seed-projects.mjs",
+    "seed:projects:prod": "node --env-file=.env.atlas scripts/seed-projects.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
