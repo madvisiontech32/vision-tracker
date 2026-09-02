@@ -6,9 +6,9 @@
  *
  *   npm run seed:nova
  *
- * Delivered work is declared once, in PROGRESS below - the task lists carry no
- * status of their own. Month 1 (P0) is closed out and month 2 is under way, so
- * the board opens at roughly eight per cent rather than empty.
+ * Progress is derived from the calendar, not hand-written: a task is complete
+ * only where its due date has already passed, so nothing due today or later is
+ * ever seeded as done. The programme runs 15 months from SEED_START.
  *
  * By default this replaces only its own data - the NOVA project, its milestones
  * and tasks, and the ten developers it owns - so anything else you created by
@@ -35,19 +35,23 @@ const RESET = process.env.SEED_RESET === "1";
 const START = new Date(`${process.env.SEED_START ?? "2026-08-01"}T00:00:00.000Z`);
 
 /**
- * How far the programme has actually got, by milestone index.
- *
- * Within a milestone the earliest-due tasks are taken first: `done` of them are
- * complete and the next `inProgress` are under way. Everything else - and every
- * milestone not listed - stays "to do" and "pending".
- *
- * Month 1 ran through August and closed; month 2 started this month. Raise or
- * lower these numbers to move the reported percentage.
+ * Today, for the purpose of deciding what has already been delivered.
+ * Override with SEED_TODAY=YYYY-MM-DD.
  */
-const PROGRESS = {
-  0: { done: 27, inProgress: 0 }, // M1 - P0, closed out
-  1: { done: 3, inProgress: 5 }, // M2 - multi-tenancy, under way
-};
+const TODAY = new Date(`${process.env.SEED_TODAY ?? "2026-09-02"}T00:00:00.000Z`);
+
+/**
+ * Progress follows the calendar rather than a hand-written list:
+ *
+ *   due before today          -> done
+ *   due within the next 30 days, earliest first, at most 6 per milestone
+ *                             -> in progress
+ *   everything else           -> to do
+ *
+ * Nothing due today or later is ever seeded as complete.
+ */
+const IN_FLIGHT_DAYS = 30;
+const MAX_IN_FLIGHT = 6;
 
 const PROJECT_NAME = "NOVA Terminal - Scale-Up Program";
 const EMAIL_DOMAIN = "novaterminal.com";
@@ -601,38 +605,38 @@ const MILESTONES = [
     title: "M15 - P5: Compliance, Sign-off & Staged Go-Live",
     description:
       "Month 15 and launch. Formal compliance review, SOC 2 Type II readiness, privacy review and broker terms-of-service conformance, then final hardening and sign-off - and the staged go-live that follows: a capped soft launch on waitlist and referrals, caps lifted step by step only while order-success, uptime and latency hold, then open signup. Caps exist so reliability leads growth, never the other way around.",
-    due: endOf(17),
+    due: endOf(15),
     tasks: [
-      ["neha", "Complete the SOC 2 Type II readiness assessment", "Formal readiness ahead of the audit window.", "high", md(15, 14)],
-      ["neha", "Complete the GDPR and privacy review", "Data handling, retention and subject rights signed off.", "medium", md(15, 18)],
-      ["neha", "Evidence the control set for audit", "Controls documented and evidenced rather than described.", "medium", md(15, 22)],
-      ["priyank", "Obtain broker terms-of-service conformance sign-off", "Every adapter reviewed against its broker's terms.", "medium", md(15, 20)],
-      ["navneet", "Freeze the production configuration for launch", "A known, reviewed configuration going into go-live.", "medium", md(15, 24)],
-      ["axit", "Complete final hardening and launch sign-off", "The gate the staged go-live depends on.", "high", md(15, 27)],
-      ["axit", "Publish the launch readiness review", "The record of what was proven, and by whom.", "high", endOf(15)],
-      ["neha", "Complete the vendor and sub-processor review", "Everyone who touches the data, assessed.", "medium", md(15, 12)],
-      ["neha", "Finalise the incident response plan", "Who declares, who communicates, who decides.", "high", md(15, 16)],
-      ["neha", "Complete the access review across every system", "Least privilege verified, not assumed.", "medium", md(15, 18)],
-      ["priyank", "Verify every adapter against its final broker agreement", "The terms as signed, not as remembered.", "high", md(15, 18)],
-      ["navneet", "Complete backup and retention verification", "Restores tested against the retention policy.", "high", md(15, 20)],
-      ["manoj", "Complete the trading-records retention review", "What must be kept, and for how long.", "medium", md(15, 22)],
-      ["axit", "Complete the data retention and deletion policy", "Written, approved and technically enforced.", "medium", md(15, 22)],
-      ["kinjal", "Publish the terms, privacy policy and disclosures", "Everything a public signup legally requires.", "medium", md(15, 24)],
-      ["axit", "Run the capped soft launch on waitlist and referrals", "Every new tenant monitored closely at low volume.", "high", md(16, 10)],
-      ["navneet", "Watch the SLOs in real time through the ramp", "Growth pauses the moment an objective is threatened.", "high", md(16, 12)],
-      ["manoj", "Monitor order-success through the ramp", "The metric that matters most, watched continuously.", "high", md(16, 14)],
-      ["axit", "Lift the intake caps step by step", "Each increase earned by the objectives continuing to hold.", "high", md(16, 24)],
-      ["neha", "Scale support to match intake", "Support capacity grows with, not behind, the user base.", "medium", md(16, 26)],
-      ["kruti", "Publish the mobile apps to both stores", "iOS and Android live alongside the public launch.", "high", md(17, 8)],
-      ["kinjal", "Switch on open signup for public launch", "Full self-serve at scale.", "high", md(17, 15)],
-      ["axit", "Define the intake cap schedule and lift criteria", "Each increase earned by the objectives holding.", "high", md(16, 6)],
-      ["navneet", "Build the launch war-room dashboard", "Every launch-critical number on one screen.", "high", md(16, 8)],
-      ["kinjal", "Build the waitlist and referral flow", "Controlled demand ahead of open signup.", "medium", md(16, 8)],
-      ["manoj", "Monitor fill quality and slippage through the ramp", "Growth must not quietly degrade execution.", "high", md(16, 18)],
-      ["neha", "Staff and rehearse the launch support rota", "Cover in place before the doors open.", "medium", md(16, 20)],
-      ["ankit", "Monitor feed cost and headroom as the base grows", "The shared feed stays economic at scale.", "medium", md(16, 22)],
-      ["nirmal", "Monitor co-pilot cost and quality at open scale", "Intelligence that stays affordable and honest.", "medium", md(17, 10)],
-      ["navneet", "Hold the post-launch stabilisation review", "What the first weeks taught, captured.", "high", md(17, 20)],
+      ["neha", "Complete the SOC 2 Type II readiness assessment", "Formal readiness ahead of the audit window.", "high", md(15, 7)],
+      ["neha", "Complete the GDPR and privacy review", "Data handling, retention and subject rights signed off.", "medium", md(15, 11)],
+      ["neha", "Evidence the control set for audit", "Controls documented and evidenced rather than described.", "medium", md(15, 15)],
+      ["priyank", "Obtain broker terms-of-service conformance sign-off", "Every adapter reviewed against its broker's terms.", "medium", md(15, 13)],
+      ["navneet", "Freeze the production configuration for launch", "A known, reviewed configuration going into go-live.", "medium", md(15, 17)],
+      ["axit", "Complete final hardening and launch sign-off", "The gate the staged go-live depends on.", "high", md(15, 19)],
+      ["axit", "Publish the launch readiness review", "The record of what was proven, and by whom.", "high", md(15, 13)],
+      ["neha", "Complete the vendor and sub-processor review", "Everyone who touches the data, assessed.", "medium", md(15, 5)],
+      ["neha", "Finalise the incident response plan", "Who declares, who communicates, who decides.", "high", md(15, 9)],
+      ["neha", "Complete the access review across every system", "Least privilege verified, not assumed.", "medium", md(15, 11)],
+      ["priyank", "Verify every adapter against its final broker agreement", "The terms as signed, not as remembered.", "high", md(15, 11)],
+      ["navneet", "Complete backup and retention verification", "Restores tested against the retention policy.", "high", md(15, 13)],
+      ["manoj", "Complete the trading-records retention review", "What must be kept, and for how long.", "medium", md(15, 15)],
+      ["axit", "Complete the data retention and deletion policy", "Written, approved and technically enforced.", "medium", md(15, 15)],
+      ["kinjal", "Publish the terms, privacy policy and disclosures", "Everything a public signup legally requires.", "medium", md(15, 17)],
+      ["axit", "Run the capped soft launch on waitlist and referrals", "Every new tenant monitored closely at low volume.", "high", md(15, 23)],
+      ["navneet", "Watch the SLOs in real time through the ramp", "Growth pauses the moment an objective is threatened.", "high", md(15, 23)],
+      ["manoj", "Monitor order-success through the ramp", "The metric that matters most, watched continuously.", "high", md(15, 24)],
+      ["axit", "Lift the intake caps step by step", "Each increase earned by the objectives continuing to hold.", "high", md(15, 27)],
+      ["neha", "Scale support to match intake", "Support capacity grows with, not behind, the user base.", "medium", md(15, 28)],
+      ["kruti", "Publish the mobile apps to both stores", "iOS and Android live alongside the public launch.", "high", md(15, 29)],
+      ["kinjal", "Switch on open signup for public launch", "Full self-serve at scale.", "high", md(15, 30)],
+      ["axit", "Define the intake cap schedule and lift criteria", "Each increase earned by the objectives holding.", "high", md(15, 21)],
+      ["navneet", "Build the launch war-room dashboard", "Every launch-critical number on one screen.", "high", md(15, 22)],
+      ["kinjal", "Build the waitlist and referral flow", "Controlled demand ahead of open signup.", "medium", md(15, 22)],
+      ["manoj", "Monitor fill quality and slippage through the ramp", "Growth must not quietly degrade execution.", "high", md(15, 25)],
+      ["neha", "Staff and rehearse the launch support rota", "Cover in place before the doors open.", "medium", md(15, 26)],
+      ["ankit", "Monitor feed cost and headroom as the base grows", "The shared feed stays economic at scale.", "medium", md(15, 26)],
+      ["nirmal", "Monitor co-pilot cost and quality at open scale", "Intelligence that stays affordable and honest.", "medium", md(15, 29)],
+      ["navneet", "Hold the post-launch stabilisation review", "What the first weeks taught, captured.", "high", md(15, 31)],
     ],
   },
 ];
@@ -718,7 +722,7 @@ const { insertedId: projectId } = await projects.insertOne({
     "A 15-month technical delivery programme evolving NOVA Terminal into a multi-tenant, multi-broker, intelligent trading platform. Eight months of engineering across four build phases, then seven months of real-world and pre-user testing across two more, closing launch-ready at month 15 and followed by a staged go-live. Seven workstreams run in parallel and converge on a demonstrable checkpoint at the end of every phase. Month targets carry a built-in comfort buffer of up to three months.",
   status: "active",
   startDate: START,
-  endDate: endOf(17),
+  endDate: endOf(15),
   accessPasswordHash: await bcrypt.hash(CLIENT_PASSWORD, 10),
   visible: true,
   createdAt: now,
@@ -733,30 +737,29 @@ for (const [order, m] of MILESTONES.entries()) {
   // A milestone's team is exactly whoever owns work inside it.
   const team = [...new Set(m.tasks.map(([key]) => key))];
 
-  const { done = 0, inProgress = 0 } = PROGRESS[order] ?? {};
+  const horizon = new Date(TODAY.getTime() + IN_FLIGHT_DAYS * 86400000);
 
-  // Progress follows the calendar: rank the milestone's tasks by due date and
-  // take the earliest ones first, whatever order they are authored in.
-  const rank = new Map(
+  // Of the work not yet due, only the nearest few count as under way.
+  const inFlight = new Set(
     m.tasks
-      .map((t, i) => [i, t[4].getTime()])
+      .map((t, i) => [i, t[4]])
+      .filter(([, due]) => due >= TODAY && due <= horizon)
       .sort((a, b) => a[1] - b[1])
-      .map(([i], position) => [i, position])
+      .slice(0, MAX_IN_FLIGHT)
+      .map(([i]) => i)
   );
 
   const statusFor = (i) => {
-    const position = rank.get(i);
-    if (position < done) return "done";
-    if (position < done + inProgress) return "in-progress";
-    return "todo";
+    if (m.tasks[i][4] < TODAY) return "done";
+    return inFlight.has(i) ? "in-progress" : "todo";
   };
 
-  const milestoneStatus =
-    done >= m.tasks.length
-      ? "completed"
-      : done + inProgress > 0
-        ? "in-progress"
-        : "pending";
+  const statuses = m.tasks.map((_, i) => statusFor(i));
+  const milestoneStatus = statuses.every((x) => x === "done")
+    ? "completed"
+    : statuses.some((x) => x !== "todo")
+      ? "in-progress"
+      : "pending";
 
   const { insertedId: milestoneId } = await milestones.insertOne({
     project: projectId,
@@ -798,14 +801,14 @@ const iso = (d) => d.toISOString().slice(0, 10);
 
 console.log("");
 console.log(`Seeded "${PROJECT_NAME}"`);
-console.log(`  window       ${iso(START)} -> ${iso(endOf(17))}`);
+console.log(`  window       ${iso(START)} -> ${iso(endOf(15))}  (15 months)`);
 console.log(`  milestones   ${MILESTONES.length}`);
 console.log(`  developers   ${DEVELOPERS.length}`);
 console.log(
   `  tasks        ${taskCount} (${statusTally.done} done, ${statusTally["in-progress"]} in progress, ${statusTally.todo} to do)`
 );
 console.log(
-  `  progress     ${Math.round((statusTally.done / taskCount) * 100)}% - month 1 closed, month 2 under way`
+  `  progress     ${Math.round((statusTally.done / taskCount) * 100)}% as at ${iso(TODAY)} - only past-due work is complete`
 );
 console.log("");
 console.log("Workload per developer:");

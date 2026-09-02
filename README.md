@@ -65,12 +65,21 @@ tasks** with per-month due dates and priorities.
 npm run seed:nova
 ```
 
-Delivered work is declared once, in the `PROGRESS` table near the top of the
-script - the task lists carry no status of their own. Out of the box month 1
-(P0) is closed out and month 2 is under way, so the board opens at **8%** rather
-than empty. Within a milestone the earliest-due tasks are taken first, so
-progress always follows the calendar. Change the two numbers in `PROGRESS` to
-move the reported percentage.
+The programme runs **15 months from `SEED_START`** - August 2026 to October
+2027 by default - and every milestone and task date is derived from that, so
+changing the start shifts the whole plan together.
+
+Progress follows the calendar rather than a hand-written list:
+
+| Task | Status |
+| --- | --- |
+| due before today | `done` |
+| due within 30 days, earliest first, max 6 per milestone | `in-progress` |
+| everything else | `todo` |
+
+**Nothing due today or later is ever seeded as complete.** "Today" is the real
+date, overridable with `SEED_TODAY=YYYY-MM-DD`; at the default 2026-09-02 that
+means month 1 is closed, month 2 is under way, and the board opens at 7%.
 
 Milestones follow the programme calendar, each one a deliverable block of
 between 18 and 36 tasks:
@@ -288,8 +297,84 @@ this README too, so writing such a class here would compile it into the CSS.
 
 Every text/background pair in both themes clears WCAG AA; the tightest is 5.3:1.
 
+## Deploying to Vercel with MongoDB Atlas
+
+### 1. Atlas
+
+- Create the cluster and a database user.
+- **Network Access**: Vercel functions do not have fixed IPs, so allow
+  `0.0.0.0/0` and rely on the database credentials. The Vercel-Atlas
+  integration configures this for you.
+- Take the SRV connection string and **add the database name before the `?`**:
+
+  ```
+  mongodb+srv://USER:PASS@CLUSTER.mongodb.net/project_tracker?retryWrites=true&w=majority
+                                              ^^^^^^^^^^^^^^^^
+  ```
+
+  This is the single most common mistake here. Without the database name the
+  driver uses `test`, so you seed one database and the app reads another, and
+  the site looks empty for no visible reason.
+
+### 2. Vercel environment variables
+
+Set both for Production (and Preview if you use it), then redeploy - Vercel
+does not apply new variables to an existing deployment.
+
+| Variable | Value |
+| --- | --- |
+| `MONGODB_URI` | the Atlas string above, database name included |
+| `SESSION_SECRET` | a long random string, generated below |
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
+
+`SESSION_SECRET` signs the admin and developer cookies. In production a missing
+value throws at startup rather than falling back to the development key, because
+a guessable key lets anyone forge an admin session.
+
+The `SEED_*` variables are **not** needed on Vercel. They are only read by the
+seed scripts, which you run from your own machine.
+
+### 3. Seed Atlas from your machine
+
+Vercel is serverless - there is nothing to shell into. The seed scripts are
+plain Node scripts that write to whatever `MONGODB_URI` points at, so you point
+them at Atlas and run them locally:
+
+```bash
+cp .env.atlas.example .env.atlas   # then fill it in
+npm run seed:admin:prod
+npm run seed:nova:prod
+```
+
+`.env.atlas` is gitignored, used only by these two commands, and never deployed.
+
+The filename matters. Next.js auto-loads `.env.production.local` and it
+**outranks `.env.local`**, so naming the file that would silently point your
+local `next build` and `next start` at Atlas. Next ignores `.env.atlas`, and the
+seed scripts read it explicitly through `--env-file`.
+
+Both scripts are safe to re-run. `seed:admin:prod` updates the existing admin
+rather than creating a duplicate, which is also how you rotate its password, and
+`seed:nova:prod` replaces only its own project, milestones, tasks and
+developers. **Never set `SEED_RESET=1` against Atlas** - it wipes every project,
+milestone, developer and task in the database.
+
+### 4. Check it
+
+Open the deployed site: the project should appear on the home page and unlock
+with your `SEED_CLIENT_PASSWORD`. If the list is empty, the database name is
+almost certainly missing from `MONGODB_URI`.
+
 ## Production notes
 
 - Set a real `SESSION_SECRET`, and seed the admin with a strong password.
+- Change the client and developer passwords from the seed defaults before
+  sharing the site with anyone.
 - Cookies are `secure` automatically when `NODE_ENV=production`, so serve over HTTPS.
-- `npm run build && npm start`.
+- Rotate the Atlas database password if the connection string has ever been
+  pasted somewhere it should not live.
+- There is no UI for deleting an admin account; remove extra ones in Atlas.
+- `npm run build && npm start` runs the production server locally.
