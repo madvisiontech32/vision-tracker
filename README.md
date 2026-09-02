@@ -10,8 +10,8 @@ A client portal + admin panel built with **Next.js 16 (App Router)**, **React 19
   password. Everything then lives on one screen: hover a milestone to reveal its
   team, hover a developer to reveal their tasks. No further page loads.
 - **Developer** signs in at `/developer` with the email and password the admin
-  set, sees every task assigned to them across all projects, and moves each one
-  between to do / in progress / review / done.
+  set, sees the tasks assigned to them across all projects (open ones by
+  default), and moves each between to do / in progress / review / done.
 - **Theme**: light / dark toggle in the header, remembered per browser, with the
   first-visit default taken from the OS preference.
 
@@ -88,7 +88,12 @@ by reading the page source.
 | Route | What you can do |
 | --- | --- |
 | `/developer/login` | Sign in with the email + password the admin set. |
-| `/developer` | Your tasks, grouped by project and milestone, with counts and a status control on each one. |
+| `/developer` | Your tasks, grouped by project and milestone, with a status control on each one. |
+
+The four count cards double as filters. **To do and In progress are on by
+default** - open work is what a developer needs on screen, so Review and Done
+are opt-in. The counts stay visible on every card whether or not it is selected,
+and a Reset button appears once the selection differs from the default.
 
 A developer may change the **status** of their **own** tasks and nothing else -
 `PATCH /api/developer/tasks/:id` matches on `{ _id, developer: session.uid }`,
